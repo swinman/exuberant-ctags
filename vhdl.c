@@ -180,6 +180,7 @@ typedef enum {
 	VHDLTAG_UNDEFINED = -1,
 	VHDLTAG_CONSTANT,
 	VHDLTAG_TYPE,
+	VHDLTAG_ENUM,
 	VHDLTAG_SUBTYPE,
 	VHDLTAG_RECORD,
 	VHDLTAG_ENTITY,
@@ -194,6 +195,7 @@ typedef enum {
 static kindOption VhdlKinds[] = {
 	{TRUE, 'c', "constant", "constant declarations"},
 	{TRUE, 't', "type", "type definitions"},
+	{TRUE, 'n', "enum", "enum names"},
 	{TRUE, 'T', "subtype", "subtype definitions"},
 	{TRUE, 'r', "record", "record names"},
 	{TRUE, 'e', "entity", "entity declarations"},
@@ -643,6 +645,21 @@ static void parseRecord (tokenInfo * const token)
 	deleteToken (name);
 }
 
+static void parseEnum ( tokenInfo * const token)
+{
+	tokenInfo *const name = newToken ();
+	Assert (isType (token, TOKEN_OPEN_PAREN));
+	readToken (name);
+	do
+	{
+		readToken (token);	/* should be a comma */
+		makeVhdlTag (name, VHDLTAG_ENUM);
+		readToken (name);
+	}
+	while (!isType ( token, TOKEN_CLOSE_PAREN ));
+	deleteToken (name);
+}
+
 static void parseTypes (tokenInfo * const token)
 {
 	tokenInfo *const name = newToken ();
@@ -660,6 +677,11 @@ static void parseTypes (tokenInfo * const token)
 			makeVhdlTag (name, kind);
 			/*TODO: make tags of the record's names */
 			parseRecord (token);
+		}
+		else if (isType (token, TOKEN_OPEN_PAREN))
+		{
+			makeVhdlTag ( name, kind );
+			parseEnum (token);
 		}
 		else
 		{
