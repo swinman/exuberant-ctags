@@ -1,6 +1,6 @@
 /*
 *   $Id: vhdl.c 652 2008-04-18 03:51:47Z elliotth $
-* 
+*
 *   Copyright (c) 2008, Nicolas Vincent
 *
 *   This source code is released for free distribution under the terms of the
@@ -601,6 +601,33 @@ static void parsePackage (tokenInfo * const token)
 	deleteToken (name);
 }
 
+static void parseGeneric (tokenInfo * const token)
+{
+	tokenInfo *const name = newToken ();
+	Assert ( isKeyword (token, KEYWORD_GENERIC) );
+	readToken (token);
+	if ( isType( token, TOKEN_OPEN_PAREN ) ) // skip mapped constants
+	{
+		do
+		{
+			do
+			{
+				readToken ( name );
+				makeVhdlTag ( name, VHDLTAG_CONSTANT );
+				readToken ( token );
+			} while ( isType ( token, TOKEN_COMMA ) );
+			// token is ':', read until either ';' or ')'
+			do
+			{
+				readToken (token);
+			} while( ! ( isType( token, TOKEN_SEMICOLON )
+						|| isType( token, TOKEN_CLOSE_PAREN )) );
+		} while( ! isType( token, TOKEN_CLOSE_PAREN ) );
+		readToken (token);	/* ; */
+	}
+	deleteToken (name);
+}
+
 static void parseModule (tokenInfo * const token)
 {
 	tokenInfo *const name = newToken ();
@@ -621,7 +648,16 @@ static void parseModule (tokenInfo * const token)
 		if (isKeyword (token, KEYWORD_IS))
 		{
 			makeVhdlTag (name, VHDLTAG_ENTITY);
-			skipToKeyword (KEYWORD_END);
+
+			readToken (token);
+			if ( isKeyword( token, KEYWORD_GENERIC ) )
+			{
+				parseGeneric( token );
+			}
+			else if ( !isKeyword( token, KEYWORD_END ) )
+			{
+				skipToKeyword (KEYWORD_END);
+			}
 			fileSkipToCharacter (';');
 		}
 	}
@@ -649,12 +685,11 @@ static void parseEnum ( tokenInfo * const token)
 {
 	tokenInfo *const name = newToken ();
 	Assert (isType (token, TOKEN_OPEN_PAREN));
-	readToken (name);
 	do
 	{
+		readToken (name);
 		readToken (token);	/* should be a comma */
 		makeVhdlTag (name, VHDLTAG_ENUM);
-		readToken (name);
 	}
 	while (!isType ( token, TOKEN_CLOSE_PAREN ));
 	deleteToken (name);
