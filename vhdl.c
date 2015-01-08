@@ -189,10 +189,12 @@ typedef enum {
 	VHDLTAG_FUNCTION,
 	VHDLTAG_PROCEDURE,
 	VHDLTAG_PACKAGE,
+	VHDLTAG_ATTRIBUTE,
 	VHDLTAG_LOCAL
 } vhdlKind;
 
 static kindOption VhdlKinds[] = {
+	// enabled, kind letter, kind name, displayed name
 	{TRUE, 'c', "constant", "constant declarations"},
 	{TRUE, 't', "type", "type definitions"},
 	{TRUE, 'n', "enum", "enum names"},
@@ -204,6 +206,7 @@ static kindOption VhdlKinds[] = {
 	{TRUE, 'f', "function", "function prototypes and declarations"},
 	{TRUE, 'p', "procedure", "procedure prototypes and declarations"},
 	{TRUE, 'P', "package", "package definitions"},
+	{TRUE, 'a', "attribute", "attributes"},
 	{FALSE, 'l', "local", "local definitions"}
 };
 
@@ -584,6 +587,16 @@ static void initialize (const langType language)
 	}
 }
 
+static void parseAttribute (tokenInfo * const token)
+{
+	tokenInfo *const name = newToken ();
+	Assert (isKeyword (token, KEYWORD_ATTRIBUTE));
+	readToken (name);
+	makeVhdlTag (name, VHDLTAG_ATTRIBUTE);
+	fileSkipToCharacter (';');
+	deleteToken (name);
+}
+
 static void parsePackage (tokenInfo * const token)
 {
 	tokenInfo *const name = newToken ();
@@ -851,6 +864,9 @@ static void parseKeywords (tokenInfo * const token, boolean local)
 		break;
 	case KEYWORD_PACKAGE:
 		parsePackage (token);
+		break;
+	case KEYWORD_ATTRIBUTE:
+		parseAttribute (token);
 		break;
 	default:
 		break;
